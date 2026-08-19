@@ -74,10 +74,10 @@ function getQuestions() {
     const ss = getSpreadsheet();
     if (!ss) return getFallbackQuestionsArray();
 
-    let sheet = ss.getSheetByName('Questions');
-    if (!sheet || sheet.getLastRow() <= 1) {
+    let sheet = ss.getSheetByName('Questions') || ss.getSheets()[0];
+    if (!sheet || sheet.getLastRow() < 1) {
       resetAndFixSpreadsheet(ss);
-      sheet = ss.getSheetByName('Questions');
+      sheet = ss.getSheetByName('Questions') || ss.getSheets()[0];
     }
 
     const data = sheet.getDataRange().getValues();
@@ -114,7 +114,7 @@ function addCustomQuestion(payload) {
     const ss = getSpreadsheet();
     if (!ss) return { success: false, error: "Tidak dapat mengakses Spreadsheet." };
 
-    let sheet = ss.getSheetByName('Questions');
+    let sheet = ss.getSheetByName('Questions') || ss.getSheets()[0];
     if (!sheet) {
       sheet = ss.insertSheet('Questions');
       sheet.appendRow(['ID', 'Category', 'Level', 'Question', 'AddedBy']);
