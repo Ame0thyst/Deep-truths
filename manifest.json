@@ -1,0 +1,23 @@
+{
+  "short_name": "Deep Truths",
+  "name": "Deep Truths — Gilang & Erika Edition",
+  "icons": [
+    {
+      "src": "logo-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#FBF8F2",
+  "theme_color": "#8C5D39",
+  "display": "standalone",
+  "orientation": "portrait"
+}

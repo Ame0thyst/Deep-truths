@@ -2,7 +2,16 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#FBF8F2">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Deep Talk — Gilang & Erika</title>
+  
+  <!-- Favicon & PWA Manifest -->
+  <link rel="icon" type="image/png" href="logo-192.png">
+  <link rel="manifest" href="manifest.json">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -296,6 +305,10 @@
 
   <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
+    // PWA & API DETECTION
+    const isPWA = window.location.hostname !== "script.google.com" && window.location.hostname !== "script.googleusercontent.com";
+    const API_URL = "https://script.google.com/macros/s/AKfycbzd60c-YqjQCb2d-iq1taQk_6OZqkF1cBaIGP6gP0ofbCiNIr60Pa-1emQpF72rYU1mJw/exec";
+
     let rawQuestions = [];
     let currentPool = [];
     let currentCategory = 'All';
@@ -309,7 +322,7 @@
     const themeNames = { warm: 'Warm', midnight: 'Dark', rose: 'Rose' };
     let currentThemeIndex = 0;
 
-    // List of cute skip dares
+    // Skip Dares List
     const skipDares = [
       "🎤 Kirim pesan suara 10 detik bilang aku sayang kamu dengan suara imut!",
       "🙈 Ceritakan 1 kenangan kecil paling konyol waktu kamu masih sekolah!",
@@ -320,6 +333,26 @@
       "🍦 Janji bakal traktir pasangan makanan kesukaannya di pertemuan berikutnya!"
     ];
 
+    // Service Worker Registration for PWA Auto-Update
+    if ('serviceWorker' in navigator && isPWA) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => {
+            console.log('Service Worker registered:', reg.scope);
+            reg.update();
+          })
+          .catch(err => console.error('Service Worker registration failed:', err));
+      });
+
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          window.location.reload();
+          refreshing = true;
+        }
+      });
+    }
+
     window.onload = function() {
       // Load saved theme preference
       const savedTheme = localStorage.getItem('ldr_card_theme');
@@ -328,27 +361,59 @@
         applyTheme(themes[currentThemeIndex]);
       }
 
-      google.script.run
-        .withSuccessHandler(function(data) {
-          if (data && data.length > 0) {
-            rawQuestions = data;
-          } else {
-            rawQuestions = [
-              { id: 'TRUTH-101', level: 'Level 1', category: 'Nostalgia', question: 'Apa first impression kamu waktu pertama kali kenal/ketemu aku?', addedBy: 'System' },
-              { id: 'TRUTH-201', level: 'Level 2', category: 'Feelings', question: 'Kapan momen saat LDR ini kamu ngerasa paling kangen sama kehadiran aku?', addedBy: 'System' },
-              { id: 'TRUTH-301', level: 'Level 3', category: 'Future', question: 'Kalau kita sudah tinggal bareng di satu kota, rutinitas pagi atau malam apa yang paling pengen kamu lakuin bareng aku?', addedBy: 'System' },
-              { id: 'TRUTH-401', level: 'Level 4', category: 'Romantic', question: 'Apa satu hal unik dari kepribadian aku yang selalu berhasil bikin hari kamu lebih tenang?', addedBy: 'System' }
-            ];
-          }
-          document.getElementById('totalQuestionsCount').innerText = rawQuestions.length;
-          filterLevel('All');
-        })
-        .withFailureHandler(function(err) {
-          console.error("Error loading questions: ", err);
-          showToast("Gagal memuat pertanyaan dari Spreadsheet.", "error");
-        })
-        .getQuestions();
+      loadQuestionsData();
     };
+
+    // Dual Mode Data Fetcher (Apps Script iframe vs PWA fetch)
+    function loadQuestionsData() {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(onQuestionsLoaded)
+          .withFailureHandler(onQuestionsFailed)
+          .getQuestions();
+      } else {
+        fetch(API_URL + "?action=get")
+          .then(res => res.json())
+          .then(res => {
+            if (res.success && res.data && res.data.length > 0) {
+              onQuestionsLoaded(res.data);
+            } else {
+              onQuestionsLoaded(getFallbackQuestions());
+            }
+          })
+          .catch(err => {
+            console.error("PWA Fetch error:", err);
+            onQuestionsLoaded(getFallbackQuestions());
+          });
+      }
+    }
+
+    function onQuestionsLoaded(data) {
+      if (data && data.length > 0) {
+        rawQuestions = data;
+      } else {
+        rawQuestions = getFallbackQuestions();
+      }
+      document.getElementById('totalQuestionsCount').innerText = rawQuestions.length;
+      filterLevel('All');
+    }
+
+    function onQuestionsFailed(err) {
+      console.error("Error loading questions: ", err);
+      showToast("Gagal memuat dari server, menggunakan data lokal.", "error");
+      rawQuestions = getFallbackQuestions();
+      document.getElementById('totalQuestionsCount').innerText = rawQuestions.length;
+      filterLevel('All');
+    }
+
+    function getFallbackQuestions() {
+      return [
+        { id: 'TRUTH-101', level: 'Level 1', category: 'Nostalgia', question: 'Apa first impression kamu waktu pertama kali kenal/ketemu aku?', addedBy: 'System' },
+        { id: 'TRUTH-201', level: 'Level 2', category: 'Feelings', question: 'Kapan momen saat LDR ini kamu ngerasa paling kangen sama kehadiran aku?', addedBy: 'System' },
+        { id: 'TRUTH-301', level: 'Level 3', category: 'Future', question: 'Kalau kita sudah tinggal bareng di satu kota, rutinitas pagi atau malam apa yang paling pengen kamu lakuin bareng aku?', addedBy: 'System' },
+        { id: 'TRUTH-401', level: 'Level 4', category: 'Romantic', question: 'Apa satu hal unik dari kepribadian aku yang selalu berhasil bikin hari kamu lebih tenang?', addedBy: 'System' }
+      ];
+    }
 
     // Helper to safely escape HTML
     function escapeHtml(str) {
@@ -422,7 +487,6 @@
       if (!soundEnabled) return;
       try {
         const ctx = getAudioContext();
-        // Decelerating tick intervals to match the spinning animation slowing down
         const tickDelays = [0, 60, 130, 230, 370, 540];
         tickDelays.forEach((delay, idx) => {
           setTimeout(() => {
@@ -485,7 +549,7 @@
         particles.forEach(p => {
           p.x += p.vx;
           p.y += p.vy;
-          p.vy += 0.15; // Gravity
+          p.vy += 0.15;
           p.alpha -= 0.02;
           if (p.alpha > 0) {
             alive = true;
@@ -587,7 +651,6 @@
       if (card.classList.contains('is-flipped')) {
         const q = currentPool[currentIndex];
         
-        // Trigger sparkles if Level 4
         if ((q.level || '').toLowerCase().includes('4') || (q.category || '').toLowerCase().includes('romantic')) {
           triggerSparkles();
         }
@@ -634,21 +697,17 @@
       const cardContainer = document.getElementById('cardContainer');
       const card = document.getElementById('cardInner');
 
-      // Add 3D fast spin & decelerate animation to container
       cardContainer.classList.add('animate-spin-roll');
 
-      // If open, flip back simultaneously
       if (card.classList.contains('is-flipped')) {
         card.classList.remove('is-flipped');
       }
 
-      // At midpoint (375ms) during ultra-fast spinning phase, swap data
       setTimeout(() => {
         currentIndex = nextIndex;
         renderCurrentCard();
       }, 375);
 
-      // Clean up animation class when spin comes to a complete stop (750ms)
       setTimeout(() => {
         cardContainer.classList.remove('animate-spin-roll');
         isRolling = false;
@@ -707,27 +766,44 @@
         addedBy: author
       };
 
-      google.script.run
-        .withSuccessHandler(function(res) {
-          btn.disabled = false;
-          btn.innerText = 'Simpan ke Spreadsheet';
-          const newObj = {
-            id: res.id || 'TRUTH-NEW',
-            ...payload
-          };
-          rawQuestions.push(newObj);
-          document.getElementById('totalQuestionsCount').innerText = rawQuestions.length;
-          closeAddModal();
-          document.getElementById('newQuestionInput').value = '';
-          showToast('Pertanyaan baru berhasil disimpan ke Spreadsheet!');
-          filterLevel(currentCategory);
+      const handleSuccess = function(res) {
+        btn.disabled = false;
+        btn.innerText = 'Simpan ke Spreadsheet';
+        const newObj = {
+          id: res.id || 'TRUTH-NEW',
+          ...payload
+        };
+        rawQuestions.push(newObj);
+        document.getElementById('totalQuestionsCount').innerText = rawQuestions.length;
+        closeAddModal();
+        document.getElementById('newQuestionInput').value = '';
+        showToast('Pertanyaan baru berhasil disimpan ke Spreadsheet!');
+        filterLevel(currentCategory);
+      };
+
+      const handleFailure = function(err) {
+        btn.disabled = false;
+        btn.innerText = 'Simpan ke Spreadsheet';
+        showToast('Gagal menyimpan: ' + err.toString(), 'error');
+      };
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(handleSuccess)
+          .withFailureHandler(handleFailure)
+          .addCustomQuestion(payload);
+      } else {
+        fetch(API_URL, {
+          method: "POST",
+          body: JSON.stringify({ action: "add", ...payload })
         })
-        .withFailureHandler(function(err) {
-          btn.disabled = false;
-          btn.innerText = 'Simpan ke Spreadsheet';
-          showToast('Gagal menyimpan: ' + err.toString(), 'error');
-        })
-        .addCustomQuestion(payload);
+          .then(res => res.json())
+          .then(res => {
+            if (res.success) handleSuccess(res);
+            else handleFailure(res.error);
+          })
+          .catch(err => handleFailure(err));
+      }
     }
   </script>
 </body>
