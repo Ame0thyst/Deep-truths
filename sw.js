@@ -1,9 +1,10 @@
-const CACHE_NAME = 'deep-truths-v12';
+const CACHE_NAME = 'deep-truths-v13';
 const ASSETS = [
   './index.html',
   './manifest.json',
   './logo-192.png',
-  './logo-512.png'
+  './logo-512.png',
+  './card-profile.webp'
 ];
 
 self.addEventListener('install', event => {
@@ -42,6 +43,7 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
 
 
 
