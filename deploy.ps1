@@ -22,7 +22,7 @@ Write-Host "Mengunggah backend ke Google Apps Script..." -ForegroundColor Cyan
 clasp push
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Melakukan deploy release baru di Google Apps Script..." -ForegroundColor Cyan
-    clasp deploy -i AKfycbzd60c-YqjQCb2d-iq1taQk_6OZqkF1cBaIGP6gP0ofbCiNIr60Pa-1emQpF72rYU1mJw
+    clasp deploy -i AKfycbygidUWlQ1ihBlOzWo24AOHHy3MCZz82oQmzrXSCrDYNq9qoOb5x7f8wR9QcenCJ-LMzA
     if ($LASTEXITCODE -eq 0) {
         Write-Host "SUCCESS: Backend Google Apps Script berhasil diperbarui!" -ForegroundColor Green
     } else {
