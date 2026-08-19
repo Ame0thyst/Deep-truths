@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Deep Talk — Gilang & Erika</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Playfair+Display:ital,wght@0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; transition: background-color 0.4s ease, color 0.4s ease; }
+    .serif-title { font-family: 'Playfair Display', serif; }
+    .cinzel-font { font-family: 'Cinzel', serif; }
+    
+    .card-container { perspective: 1200px; }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-style: preserve-3d;
+    }
+    .card-inner.is-flipped { transform: rotateY(180deg); }
+    .card-face {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.75rem;
+    }
+    .card-front { z-index: 2; transform: rotateY(0deg); }
+    .card-back { transform: rotateY(180deg); }
+
+    /* 3D FAST SPINNING & DECELERATING SHUFFLE ANIMATION */
+    @keyframes cardFastSpin {
+      0% { transform: scale(1) rotateY(0deg); }
+      30% { transform: scale(0.82) rotateY(720deg); }
+      65% { transform: scale(0.92) rotateY(1260deg); }
+      100% { transform: scale(1) rotateY(1440deg); }
+    }
+    .animate-spin-roll {
+      animation: cardFastSpin 0.75s cubic-bezier(0.15, 0.85, 0.35, 1.0);
+    }
+
+    /* THEME STYLES */
+    /* 1. Midnight Theme */
+    body.theme-midnight {
+      background-color: #0F172A;
+      color: #F8FAFC;
+    }
+    body.theme-midnight header { border-color: #334155; }
+    body.theme-midnight .title-text { color: #FDE047; }
+    body.theme-midnight .subtitle-text { color: #94A3B8; }
+    body.theme-midnight .header-btn { background-color: #1E293B; border-color: #334155; color: #F1F5F9; }
+    body.theme-midnight .cat-pill { background-color: #1E293B; border-color: #334155; color: #94A3B8; }
+    body.theme-midnight .cat-pill.active { background-color: #EAB308; color: #0F172A; }
+    body.theme-midnight .card-front { background: linear-gradient(to bottom, #1E293B, #0F172A); border-color: #334155; }
+    body.theme-midnight .card-back { background-color: #1E293B; border-color: #475569; color: #F8FAFC; }
+    body.theme-midnight .question-title { color: #FDE047; }
+    body.theme-midnight .roll-btn { background: linear-gradient(to right, #CA8A04, #EAB308, #CA8A04); }
+
+    /* 2. Rose Garden Theme */
+    body.theme-rose {
+      background-color: #FFF1F2;
+      color: #4C0519;
+    }
+    body.theme-rose header { border-color: #FECDD3; }
+    body.theme-rose .title-text { color: #9F1239; }
+    body.theme-rose .subtitle-text { color: #FB7185; }
+    body.theme-rose .header-btn { background-color: #FFE4E6; border-color: #FECDD3; color: #9F1239; }
+    body.theme-rose .cat-pill { background-color: #FFE4E6; border-color: #FECDD3; color: #9F1239; }
+    body.theme-rose .cat-pill.active { background-color: #E11D48; color: #FFFFFF; }
+    body.theme-rose .card-front { background: linear-gradient(to bottom, #FFF5F5, #FFE4E6); border-color: #FDA4AF; }
+    body.theme-rose .card-back { background-color: #FFF5F5; border-color: #FDA4AF; color: #4C0519; }
+    body.theme-rose .question-title { color: #881337; }
+    body.theme-rose .roll-btn { background: linear-gradient(to right, #E11D48, #F43F5E, #E11D48); }
+  </style>
+</head>
+<body class="bg-[#FBF8F2] text-[#3F3935] min-h-screen flex flex-col items-center justify-between p-4 selection:bg-amber-200 selection:text-amber-900">
+
+  <!-- SPARKLE CANVAS FOR LEVEL 4 CARD -->
+  <canvas id="sparkleCanvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+  <!-- ================= TOP HEADER ================= -->
+  <header class="w-full max-w-md flex items-center justify-between py-2 border-b border-[#E8E1D5] transition-colors">
+    <div class="flex items-center space-x-2">
+      <span class="text-xl">✨</span>
+      <div>
+        <h1 class="cinzel-font text-base font-bold tracking-wider text-[#78350F] title-text">Deep Truths</h1>
+        <p class="text-[10px] text-[#A89F91] tracking-wide uppercase font-semibold subtitle-text">Gilang & Erika Edition</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-1.5">
+      <!-- Theme Switcher -->
+      <button onclick="cycleTheme()" title="Ganti Tema" class="header-btn px-2.5 py-1.5 rounded-full bg-[#F2ECE1] border border-[#E0D7C6] text-xs font-semibold text-[#8C5D39] hover:opacity-80 transition shadow-sm">
+        🎨 <span id="themeLabel">Warm</span>
+      </button>
+
+      <!-- Sound Toggle -->
+      <button onclick="toggleSound()" id="soundBtn" title="Suara FX" class="header-btn px-2.5 py-1.5 rounded-full bg-[#F2ECE1] border border-[#E0D7C6] text-xs font-semibold text-[#8C5D39] hover:opacity-80 transition shadow-sm">
+        🔊
+      </button>
+
+      <!-- History Modal Toggle -->
+      <button onclick="toggleHistoryModal()" class="header-btn px-3 py-1.5 rounded-full bg-[#F2ECE1] border border-[#E0D7C6] text-xs font-semibold text-[#8C5D39] hover:opacity-80 transition flex items-center gap-1 shadow-sm">
+        📜 (<span id="historyCount">0</span>)
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= FILTER LEVEL ================= -->
+  <div class="w-full max-w-md my-3 flex gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
+    <button onclick="filterLevel('All')" class="cat-pill active px-4 py-1.5 rounded-full bg-[#8C5D39] text-white font-medium whitespace-nowrap shadow-sm transition">Semua</button>
+    <button onclick="filterLevel('Level 1')" class="cat-pill px-4 py-1.5 rounded-full bg-[#F4EFE6] border border-[#E5DCCF] text-[#6B5E51] whitespace-nowrap hover:bg-[#EFE8DC] transition">🌱 Level 1</button>
+    <button onclick="filterLevel('Level 2')" class="cat-pill px-4 py-1.5 rounded-full bg-[#F4EFE6] border border-[#E5DCCF] text-[#6B5E51] whitespace-nowrap hover:bg-[#EFE8DC] transition">💭 Level 2</button>
+    <button onclick="filterLevel('Level 3')" class="cat-pill px-4 py-1.5 rounded-full bg-[#F4EFE6] border border-[#E5DCCF] text-[#6B5E51] whitespace-nowrap hover:bg-[#EFE8DC] transition">🔮 Level 3</button>
+    <button onclick="filterLevel('Level 4')" class="cat-pill px-4 py-1.5 rounded-full bg-[#F4EFE6] border border-[#E5DCCF] text-[#6B5E51] whitespace-nowrap hover:bg-[#EFE8DC] transition">🌹 Level 4</button>
+  </div>
+
+  <!-- ================= KARTU 3D CREAM ================= -->
+  <main class="w-full max-w-md flex-1 flex flex-col items-center justify-center my-2">
+    <div id="cardContainer" class="w-full h-[390px] card-container cursor-pointer select-none" onclick="flipCard()">
+      <div id="cardInner" class="card-inner shadow-xl shadow-amber-950/5">
+        
+        <!-- Depan Kartu (Cover) -->
+        <div class="card-face card-front bg-gradient-to-b from-[#FFFDF9] to-[#FAF5EB] border-2 border-[#EADECF] shadow-sm">
+          <div class="w-full flex justify-between items-center text-xs">
+            <div class="flex items-center gap-1.5">
+              <span id="frontCodeBadge" class="bg-[#F3ECE0] text-[#8C5D39] border border-[#DFCDB8] px-2.5 py-0.5 rounded-lg font-mono font-bold text-[11px]">
+                TRUTH-101
+              </span>
+              <span id="frontLevelBadge" class="bg-[#F8F2E6] text-[#6B5E51] border border-[#E5D7C5] px-2.5 py-0.5 rounded-full text-[10px] font-semibold">
+                LEVEL 1
+              </span>
+            </div>
+            
+            <span id="frontCatBadge" class="text-[#8C5D39] bg-[#F4EFE6] px-2.5 py-0.5 rounded-md font-semibold text-[11px]">
+              #Nostalgia
+            </span>
+          </div>
+
+          <div class="my-auto space-y-4 text-center">
+            <div class="w-20 h-20 mx-auto rounded-full bg-[#F8F2E6] border border-[#EADECF] flex items-center justify-center text-3xl shadow-inner">
+              💌
+            </div>
+            <div class="space-y-1">
+              <h2 class="serif-title text-2xl text-[#4A3B32] italic font-semibold">Sentuh untuk Membuka</h2>
+              <p class="text-xs text-[#8C7E72] max-w-[220px] mx-auto">Jawab pertanyaan ini dengan jujur dan tulus.</p>
+            </div>
+          </div>
+
+          <div class="text-[10px] text-[#B8AE9F] tracking-widest uppercase font-semibold">
+            Tap Card to Reveal
+          </div>
+        </div>
+
+        <!-- Belakang Kartu (Pertanyaan) -->
+        <div class="card-face card-back bg-[#FFFDF9] border-2 border-[#D9C4AC] shadow-md">
+          <div class="w-full flex justify-between items-center text-xs">
+            <div class="flex items-center gap-1.5">
+              <span id="backCodeBadge" class="bg-[#F3ECE0] text-[#8C5D39] border border-[#DFCDB8] px-2.5 py-0.5 rounded-lg font-mono font-bold text-[11px]">
+                TRUTH-101
+              </span>
+              <span id="backTagBadge" class="bg-[#F4EFE6] text-[#6B5E51] px-2.5 py-0.5 rounded-md font-semibold text-[10px]">
+                #Nostalgia • Level 1
+              </span>
+            </div>
+            <span class="text-[#8C5D39] text-xs font-semibold font-mono" id="cardCounter">1 / 16</span>
+          </div>
+
+          <div class="my-auto px-3 text-center">
+            <p id="questionText" class="serif-title question-title text-xl sm:text-2xl text-[#2B231D] leading-relaxed font-medium">
+              Memuat pertanyaan...
+            </p>
+          </div>
+
+          <!-- Footer Belakang dengan TTS & Skip Dare -->
+          <div class="w-full pt-2.5 border-t border-[#EFE8DC] flex items-center justify-between text-xs text-[#8C7E72]">
+            <div class="flex items-center gap-2">
+              <button onclick="event.stopPropagation(); readQuestionAloud()" title="Bacakan Teks" class="px-2 py-1 rounded-lg bg-[#F2ECE1] hover:bg-[#E0D7C6] text-[#78350F] text-[11px] font-semibold flex items-center gap-1 transition">
+                🔊 Baca
+              </button>
+              <button onclick="event.stopPropagation(); triggerSkipDare()" title="Skip / Tantangan Manis" class="px-2 py-1 rounded-lg bg-[#FEE2E2] hover:bg-[#FCA5A5] text-[#991B1B] text-[11px] font-semibold flex items-center gap-1 transition">
+                ⏭️ Skip
+              </button>
+            </div>
+            <span class="text-[#A89F91] text-[11px]" id="addedByBadge">Oleh: System</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= ACTION CONTROLS ================= -->
+  <footer class="w-full max-w-md space-y-3 pb-2">
+    <button onclick="rollNextCard()" class="roll-btn w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#8C5D39] via-[#A06C45] to-[#8C5D39] hover:opacity-95 text-white font-bold text-sm active:scale-95 transition shadow-lg shadow-amber-900/15 flex items-center justify-center gap-2 cursor-pointer">
+      🎲 Acak Kartu Baru
+    </button>
+
+    <div class="flex items-center justify-between px-1 text-xs">
+      <span class="text-[#A89F91] flex items-center gap-1">
+        ✨ Total <span id="totalQuestionsCount" class="font-bold text-[#8C5D39]">0</span> pertanyaan
+      </span>
+      <button onclick="openAddModal()" class="text-[#8C5D39] hover:underline font-semibold flex items-center gap-1">
+        ➕ Buat Pertanyaan
+      </button>
+    </div>
+  </footer>
+
+  <!-- ================= MODAL RIWAYAT ================= -->
+  <div id="historyModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FAF7F2] border border-[#E0D7C6] w-full max-w-md max-h-[80vh] rounded-3xl p-5 flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-[#EADECF]">
+        <h3 class="font-bold text-[#4A3B32] text-sm flex items-center gap-1.5">
+          📜 Kartu yang Sudah Dibuka Sesi Ini
+        </h3>
+        <button onclick="toggleHistoryModal()" class="text-[#8C7E72] hover:text-[#4A3B32] text-xl font-bold p-1">&times;</button>
+      </div>
+      
+      <div id="historyModalList" class="flex-1 overflow-y-auto py-3 space-y-2.5 text-xs">
+        <div class="text-[#A89F91] text-center py-8">Belum ada kartu yang diacak pada sesi ini.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL SKIP DARE (HUKUMAN MANIS) ================= -->
+  <div id="dareModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FFFDF9] border-2 border-[#FDA4AF] w-full max-w-sm rounded-3xl p-6 text-center space-y-4 shadow-2xl animate-bounce-once">
+      <div class="w-16 h-16 mx-auto rounded-full bg-[#FFE4E6] flex items-center justify-center text-3xl">
+        🎁
+      </div>
+      <div>
+        <h3 class="text-base font-bold text-[#9F1239]">Tantangan Skip!</h3>
+        <p class="text-xs text-[#881337] mt-1">Karena kamu men-skip pertanyaan ini, lakukan tantangan manis di bawah ini:</p>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-[#FFF1F2] border border-[#FECDD3] text-xs font-semibold text-[#9F1239] leading-relaxed" id="dareText">
+        "Kirim pesan suara 10 detik bilang aku sayang kamu!"
+      </div>
+
+      <button onclick="closeDareModal()" class="w-full py-2.5 rounded-xl bg-[#E11D48] text-white text-xs font-bold shadow-md hover:bg-[#BE123C] transition">
+        Siap, Laksanakan! 💕
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL TAMBAH PERTANYAAN ================= -->
+  <div id="addModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[#FFFDF9] border border-[#E0D7C6] w-full max-w-md rounded-3xl p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-[#4A3B32]">Tambah Pertanyaan Baru</h3>
+        <button onclick="closeAddModal()" class="text-[#8C7E72] hover:text-[#4A3B32] text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs font-semibold text-[#6B5E51] mb-1">Pertanyaan</label>
+          <textarea id="newQuestionInput" rows="3" class="w-full bg-[#FAF7F2] border border-[#D9C4AC] rounded-2xl p-3 text-[#3F3935] placeholder-[#B8AE9F] focus:outline-none focus:border-[#8C5D39] text-xs" placeholder="Tulis pertanyaan yang ingin kamu tanyakan ke pasangan..."></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-[#6B5E51] mb-1">Level</label>
+            <select id="newLevelInput" class="w-full bg-[#FAF7F2] border border-[#D9C4AC] rounded-xl p-2.5 text-[#3F3935] text-xs focus:outline-none focus:border-[#8C5D39]">
+              <option value="Level 1">Level 1 - Ice Breaker</option>
+              <option value="Level 2" selected>Level 2 - Feelings</option>
+              <option value="Level 3">Level 3 - Future</option>
+              <option value="Level 4">Level 4 - Romantic</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-[#6B5E51] mb-1">Dibuat Oleh</label>
+            <input type="text" id="newAddedByInput" class="w-full bg-[#FAF7F2] border border-[#D9C4AC] rounded-xl p-2.5 text-[#3F3935] text-xs focus:outline-none focus:border-[#8C5D39]" placeholder="Gilang / Erika" value="Gilang" />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeAddModal()" class="px-4 py-2 rounded-xl bg-[#F2ECE1] text-[#6B5E51] text-xs font-semibold">Batal</button>
+        <button id="submitBtn" onclick="submitNewQuestion()" class="px-5 py-2 rounded-xl bg-[#8C5D39] hover:bg-[#784E2E] text-white text-xs font-semibold shadow-sm">Simpan ke Spreadsheet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center gap-2 w-full max-w-xs"></div>
+
+  <!-- ================= JAVASCRIPT LOGIC ================= -->
+  <script>
+    let rawQuestions = [];
+    let currentPool = [];
+    let currentCategory = 'All';
+    let currentIndex = 0;
+    let sessionHistory = [];
+    let isRolling = false;
+    let soundEnabled = true;
+
+    // Theme state
+    const themes = ['warm', 'midnight', 'rose'];
+    const themeNames = { warm: 'Warm', midnight: 'Dark', rose: 'Rose' };
+    let currentThemeIndex = 0;
+
+    // List of cute skip dares
+    const skipDares = [
+      "🎤 Kirim pesan suara 10 detik bilang aku sayang kamu dengan suara imut!",
+      "🙈 Ceritakan 1 kenangan kecil paling konyol waktu kamu masih sekolah!",
+      "📸 Kirim foto selfie lucu kamu dengan ekspresi paling kocak sekarang!",
+      "💖 Sebutkan 3 hal unik dari aku yang paling bikin kamu kangen!",
+      "🎵 Nyanyikan 1 baris lagu romantis favorit kita!",
+      "🤫 Ucapkan 1 harapan rahasia yang pengen kamu lakuin pas ketemu nanti!",
+      "🍦 Janji bakal traktir pasangan makanan kesukaannya di pertemuan berikutnya!"
+    ];
+
+    window.onload = function() {
+      // Load saved theme preference
+      const savedTheme = localStorage.getItem('ldr_card_theme');
+      if (savedTheme && themes.includes(savedTheme)) {
+        currentThemeIndex = themes.indexOf(savedTheme);
+        applyTheme(themes[currentThemeIndex]);
+      }
+
+      google.script.run
+        .withSuccessHandler(function(data) {
+          if (data && data.length > 0) {
+            rawQuestions = data;
+          } else {
+            rawQuestions = [
+              { id: 'TRUTH-101', level: 'Level 1', category: 'Nostalgia', question: 'Apa first impression kamu waktu pertama kali kenal/ketemu aku?', addedBy: 'System' },
+              { id: 'TRUTH-201', level: 'Level 2', category: 'Feelings', question: 'Kapan momen saat LDR ini kamu ngerasa paling kangen sama kehadiran aku?', addedBy: 'System' },
+              { id: 'TRUTH-301', level: 'Level 3', category: 'Future', question: 'Kalau kita sudah tinggal bareng di satu kota, rutinitas pagi atau malam apa yang paling pengen kamu lakuin bareng aku?', addedBy: 'System' },
+              { id: 'TRUTH-401', level: 'Level 4', category: 'Romantic', question: 'Apa satu hal unik dari kepribadian aku yang selalu berhasil bikin hari kamu lebih tenang?', addedBy: 'System' }
+            ];
+          }
+          document.getElementById('totalQuestionsCount').innerText = rawQuestions.length;
+          filterLevel('All');
+        })
+        .withFailureHandler(function(err) {
+          console.error("Error loading questions: ", err);
+          showToast("Gagal memuat pertanyaan dari Spreadsheet.", "error");
+        })
+        .getQuestions();
+    };
+
+    // Helper to safely escape HTML
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Custom Toast Notification
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `px-4 py-2.5 rounded-2xl text-xs font-semibold shadow-lg transition-all duration-300 transform translate-y-4 opacity-0 flex items-center gap-2 pointer-events-auto text-center border ${
+        type === 'error' 
+          ? 'bg-rose-50 border-rose-200 text-rose-800' 
+          : 'bg-[#F2ECE1] border-[#DFCDB8] text-[#8C5D39]'
+      }`;
+      
+      const icon = type === 'error' ? '⚠️' : '✨';
+      toast.innerHTML = `<span>${icon}</span> <span>${escapeHtml(message)}</span>`;
+      
+      container.appendChild(toast);
+      setTimeout(() => toast.classList.remove('translate-y-4', 'opacity-0'), 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // ================= SOUND SYNTHESIZER (WEB AUDIO API) =================
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('soundBtn').innerText = soundEnabled ? '🔊' : '🔇';
+      showToast(soundEnabled ? "Suara Efek: ON" : "Suara Efek: OFF");
+    }
+
+    function playFlipSound() {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.12);
+      } catch(e) {}
+    }
+
+    function playShuffleSound() {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        // Decelerating tick intervals to match the spinning animation slowing down
+        const tickDelays = [0, 60, 130, 230, 370, 540];
+        tickDelays.forEach((delay, idx) => {
+          setTimeout(() => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(450 - idx * 40, ctx.currentTime);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.05);
+          }, delay);
+        });
+      } catch(e) {}
+    }
+
+    // ================= THEME SWITCHER =================
+    function cycleTheme() {
+      currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+      const selectedTheme = themes[currentThemeIndex];
+      applyTheme(selectedTheme);
+      localStorage.setItem('ldr_card_theme', selectedTheme);
+      showToast(`Tema diganti ke: ${themeNames[selectedTheme]}`);
+    }
+
+    function applyTheme(themeName) {
+      document.body.classList.remove('theme-midnight', 'theme-rose');
+      if (themeName === 'midnight') document.body.classList.add('theme-midnight');
+      if (themeName === 'rose') document.body.classList.add('theme-rose');
+      document.getElementById('themeLabel').innerText = themeNames[themeName];
+    }
+
+    // ================= SPARKLE PARTICLES (LEVEL 4) =================
+    function triggerSparkles() {
+      const canvas = document.getElementById('sparkleCanvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      const colors = ['#F43F5E', '#FB7185', '#FDE047', '#E11D48', '#FFF'];
+
+      for (let i = 0; i < 40; i++) {
+        particles.push({
+          x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+          y: canvas.height / 2 + (Math.random() - 0.5) * 200,
+          vx: (Math.random() - 0.5) * 8,
+          vy: (Math.random() - 0.8) * 8,
+          size: Math.random() * 6 + 3,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          alpha: 1
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.15; // Gravity
+          p.alpha -= 0.02;
+          if (p.alpha > 0) {
+            alive = true;
+            ctx.save();
+            ctx.globalAlpha = p.alpha;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        });
+        if (alive) requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    // ================= TEXT TO SPEECH =================
+    function readQuestionAloud() {
+      if (!('speechSynthesis' in window)) {
+        return showToast("Browsermu tidak mendukung fitur suara.", "error");
+      }
+      window.speechSynthesis.cancel();
+      const text = document.getElementById('questionText').innerText;
+      if (!text) return;
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'id-ID';
+      utterance.rate = 0.95;
+      window.speechSynthesis.speak(utterance);
+      showToast("Membacakan pertanyaan...", "success");
+    }
+
+    // ================= SKIP DARE MODAL =================
+    function triggerSkipDare() {
+      const randomDare = skipDares[Math.floor(Math.random() * skipDares.length)];
+      document.getElementById('dareText').innerText = randomDare;
+      document.getElementById('dareModal').classList.remove('hidden');
+    }
+    function closeDareModal() {
+      document.getElementById('dareModal').classList.add('hidden');
+    }
+
+    // ================= LEVEL FILTERING & CARDS =================
+    function filterLevel(lvl) {
+      currentCategory = lvl;
+      if (lvl === 'All') {
+        currentPool = [...rawQuestions];
+      } else {
+        currentPool = rawQuestions.filter(q => (q.level || '').toLowerCase() === lvl.toLowerCase());
+      }
+      
+      if (currentPool.length > 0) {
+        currentIndex = Math.floor(Math.random() * currentPool.length);
+      } else {
+        currentIndex = 0;
+      }
+
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        if (btn.innerText.includes(lvl) || (lvl === 'All' && btn.innerText.includes('Semua'))) {
+          btn.className = "cat-pill active px-4 py-1.5 rounded-full bg-[#8C5D39] text-white font-semibold whitespace-nowrap shadow-sm transition";
+        } else {
+          btn.className = "cat-pill px-4 py-1.5 rounded-full bg-[#F4EFE6] border border-[#E5DCCF] text-[#6B5E51] whitespace-nowrap hover:bg-[#EFE8DC] transition";
+        }
+      });
+
+      renderCurrentCard();
+    }
+
+    function renderCurrentCard() {
+      const card = document.getElementById('cardInner');
+      card.classList.remove('is-flipped'); 
+
+      if (!currentPool || currentPool.length === 0) {
+        document.getElementById('questionText').innerText = "Belum ada pertanyaan untuk level ini.";
+        document.getElementById('cardCounter').innerText = "0 / 0";
+        return;
+      }
+
+      const q = currentPool[currentIndex];
+
+      document.getElementById('frontCodeBadge').innerText = q.id || 'TRUTH';
+      document.getElementById('frontLevelBadge').innerText = (q.level || 'Level 1').toUpperCase();
+      document.getElementById('frontCatBadge').innerText = `#${q.category || 'General'}`;
+
+      document.getElementById('backCodeBadge').innerText = q.id || 'TRUTH';
+      document.getElementById('backTagBadge').innerText = `#${q.category || 'General'} • ${q.level || 'Level 1'}`;
+      document.getElementById('questionText').innerText = q.question || '';
+      document.getElementById('addedByBadge').innerText = `Oleh: ${q.addedBy || 'System'}`;
+      document.getElementById('cardCounter').innerText = `${currentIndex + 1} / ${currentPool.length}`;
+    }
+
+    function flipCard() {
+      if (currentPool.length === 0) return;
+      const card = document.getElementById('cardInner');
+      card.classList.toggle('is-flipped');
+      playFlipSound();
+
+      if (card.classList.contains('is-flipped')) {
+        const q = currentPool[currentIndex];
+        
+        // Trigger sparkles if Level 4
+        if ((q.level || '').toLowerCase().includes('4') || (q.category || '').toLowerCase().includes('romantic')) {
+          triggerSparkles();
+        }
+
+        if (q && !sessionHistory.some(item => item.question === q.question)) {
+          sessionHistory.unshift({
+            ...q,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          });
+          document.getElementById('historyCount').innerText = sessionHistory.length;
+        }
+      }
+    }
+
+    // ================= 3D FAST SPINNING SHUFFLE ROLL =================
+    function rollNextCard() {
+      if (!currentPool || currentPool.length === 0) return;
+      if (isRolling) return;
+
+      if (currentPool.length === 1) {
+        const card = document.getElementById('cardInner');
+        if (card.classList.contains('is-flipped')) {
+          isRolling = true;
+          card.classList.remove('is-flipped');
+          playFlipSound();
+          setTimeout(() => {
+            isRolling = false;
+            showToast("Kembali ke cover depan. Hanya 1 pertanyaan di level ini!");
+          }, 600);
+        } else {
+          showToast("Hanya ada 1 pertanyaan di level ini!");
+        }
+        return;
+      }
+
+      isRolling = true;
+      playShuffleSound();
+
+      let nextIndex = currentIndex;
+      while (nextIndex === currentIndex) {
+        nextIndex = Math.floor(Math.random() * currentPool.length);
+      }
+
+      const cardContainer = document.getElementById('cardContainer');
+      const card = document.getElementById('cardInner');
+
+      // Add 3D fast spin & decelerate animation to container
+      cardContainer.classList.add('animate-spin-roll');
+
+      // If open, flip back simultaneously
+      if (card.classList.contains('is-flipped')) {
+        card.classList.remove('is-flipped');
+      }
+
+      // At midpoint (375ms) during ultra-fast spinning phase, swap data
+      setTimeout(() => {
+        currentIndex = nextIndex;
+        renderCurrentCard();
+      }, 375);
+
+      // Clean up animation class when spin comes to a complete stop (750ms)
+      setTimeout(() => {
+        cardContainer.classList.remove('animate-spin-roll');
+        isRolling = false;
+      }, 750);
+    }
+
+    function toggleHistoryModal() {
+      const modal = document.getElementById('historyModal');
+      const listContainer = document.getElementById('historyModalList');
+      
+      if (modal.classList.contains('hidden')) {
+        if (sessionHistory.length === 0) {
+          listContainer.innerHTML = `<div class="text-[#A89F91] text-center py-8">Belum ada kartu yang diacak pada sesi ini.</div>`;
+        } else {
+          listContainer.innerHTML = sessionHistory.map(item => `
+            <div class="bg-[#FFFDF9] border border-[#E8DFC0] rounded-2xl p-3 shadow-sm">
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center gap-1.5">
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#F3ECE0] text-[#8C5D39] font-mono">
+                    ${escapeHtml(item.id)}
+                  </span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#F4EFE6] text-[#6B5E51]">
+                    #${escapeHtml(item.category)} • ${escapeHtml(item.level)}
+                  </span>
+                </div>
+                <span class="text-[10px] text-[#A89F91] font-mono">${escapeHtml(item.time)}</span>
+              </div>
+              <p class="text-[#3F3935] text-xs leading-relaxed font-medium mt-1">${escapeHtml(item.question)}</p>
+            </div>
+          `).join('');
+        }
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
+    function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
+
+    function submitNewQuestion() {
+      const q = document.getElementById('newQuestionInput').value.trim();
+      const lvl = document.getElementById('newLevelInput').value;
+      const author = document.getElementById('newAddedByInput').value.trim() || 'Pasangan';
+      const btn = document.getElementById('submitBtn');
+
+      if (!q) return showToast('Tulis pertanyaannya terlebih dahulu!', 'error');
+
+      btn.disabled = true;
+      btn.innerText = 'Menyimpan...';
+
+      const payload = {
+        question: q,
+        level: lvl,
+        category: 'Custom',
+        addedBy: author
+      };
+
+      google.script.run
+        .withSuccessHandler(function(res) {
+          btn.disabled = false;
+          btn.innerText = 'Simpan ke Spreadsheet';
+          const newObj = {
+            id: res.id || 'TRUTH-NEW',
+            ...payload
+          };
+          rawQuestions.push(newObj);
+          document.getElementById('totalQuestionsCount').innerText = rawQuestions.length;
+          closeAddModal();
+          document.getElementById('newQuestionInput').value = '';
+          showToast('Pertanyaan baru berhasil disimpan ke Spreadsheet!');
+          filterLevel(currentCategory);
+        })
+        .withFailureHandler(function(err) {
+          btn.disabled = false;
+          btn.innerText = 'Simpan ke Spreadsheet';
+          showToast('Gagal menyimpan: ' + err.toString(), 'error');
+        })
+        .addCustomQuestion(payload);
+    }
+  </script>
+</body>
+</html>
