@@ -73,7 +73,6 @@
     body.theme-midnight .header-btn { background-color: #1E293B; border-color: #334155; color: #F1F5F9; }
     body.theme-midnight .cat-pill { background-color: #1E293B; border-color: #334155; color: #94A3B8; }
     body.theme-midnight .cat-pill.active { background-color: #EAB308; color: #0F172A; }
-    body.theme-midnight .card-front-overlay { background: linear-gradient(to bottom, rgba(15, 23, 42, 0.82), rgba(30, 41, 59, 0.92)); }
     body.theme-midnight .card-front { border-color: #334155; }
     body.theme-midnight .card-back { background-color: #1E293B; border-color: #475569; color: #F8FAFC; }
     body.theme-midnight .question-title { color: #FDE047; }
@@ -90,7 +89,6 @@
     body.theme-rose .header-btn { background-color: #FFE4E6; border-color: #FECDD3; color: #9F1239; }
     body.theme-rose .cat-pill { background-color: #FFE4E6; border-color: #FECDD3; color: #9F1239; }
     body.theme-rose .cat-pill.active { background-color: #E11D48; color: #FFFFFF; }
-    body.theme-rose .card-front-overlay { background: linear-gradient(to bottom, rgba(255, 245, 245, 0.82), rgba(255, 228, 230, 0.90)); }
     body.theme-rose .card-front { border-color: #FDA4AF; }
     body.theme-rose .card-back { background-color: #FFF5F5; border-color: #FDA4AF; color: #4C0519; }
     body.theme-rose .question-title { color: #881337; }
@@ -183,40 +181,24 @@
     <div id="cardContainer" class="w-full h-[390px] card-container cursor-pointer select-none" onclick="flipCard()">
       <div id="cardInner" class="card-inner shadow-xl shadow-amber-950/5">
         
-        <!-- Depan Kartu (Cover with card-profile.webp Background) -->
-        <div class="card-face card-front border-2 border-[#EADECF] shadow-sm relative overflow-hidden bg-cover bg-center" style="background-image: url('card-profile.webp');">
-          <!-- Glassmorphic Overlay for Text Readability -->
-          <div class="card-front-overlay absolute inset-0 bg-gradient-to-b from-[#FFFDF9]/80 via-[#FAF5EB]/85 to-[#F5ECE0]/92 backdrop-blur-[2px] transition-colors duration-300"></div>
-
-          <!-- Header Badges -->
-          <div class="w-full flex justify-between items-center text-xs relative z-10">
-            <div class="flex items-center gap-1.5">
-              <span id="frontCodeBadge" class="bg-[#F3ECE0]/90 backdrop-blur-sm text-[#8C5D39] border border-[#DFCDB8] px-2.5 py-0.5 rounded-lg font-mono font-bold text-[11px]">
-                TRUTH-101
-              </span>
-              <span id="frontLevelBadge" class="bg-[#F8F2E6]/90 backdrop-blur-sm text-[#6B5E51] border border-[#E5D7C5] px-2.5 py-0.5 rounded-full text-[10px] font-semibold">
-                LEVEL 1
-              </span>
-            </div>
-            
-            <span id="frontCatBadge" class="text-[#8C5D39] bg-[#F4EFE6]/90 backdrop-blur-sm px-2.5 py-0.5 rounded-md font-semibold text-[11px]">
-              #Nostalgia
-            </span>
-          </div>
+        <!-- Depan Kartu (Full Vivid card-profile.webp Cover) -->
+        <div class="card-face card-front border-2 border-stone-200/50 shadow-xl relative overflow-hidden bg-cover bg-center" style="background-image: url('card-profile.webp');">
+          <!-- Subtle Gradient Overlay (Bottom dark fade only for crisp white text) -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"></div>
 
           <!-- Center Content -->
-          <div class="my-auto space-y-4 text-center relative z-10">
-            <div class="w-20 h-20 mx-auto rounded-full bg-[#F8F2E6]/90 backdrop-blur-md border-2 border-[#EADECF] flex items-center justify-center text-3xl shadow-md transition-transform hover:scale-105">
+          <div class="my-auto space-y-3 text-center relative z-10">
+            <div class="w-16 h-16 mx-auto rounded-full bg-white/30 backdrop-blur-md border border-white/60 flex items-center justify-center text-3xl shadow-lg transition-transform hover:scale-110">
               💌
             </div>
             <div class="space-y-1">
-              <h2 class="serif-title text-2xl text-[#4A3B32] italic font-semibold drop-shadow-sm">Sentuh untuk Membuka</h2>
-              <p class="text-xs text-[#8C7E72] max-w-[220px] mx-auto font-medium">Jawab pertanyaan ini dengan jujur dan tulus.</p>
+              <h2 class="serif-title text-2xl sm:text-3xl text-white italic font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]">Sentuh untuk Membuka</h2>
+              <p class="text-xs text-amber-100/95 max-w-[220px] mx-auto font-semibold drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">Jawab pertanyaan ini dengan jujur dan tulus.</p>
             </div>
           </div>
 
           <!-- Bottom Footer -->
-          <div class="text-[10px] text-[#8C5D39] tracking-widest uppercase font-bold relative z-10">
+          <div class="text-[10px] text-amber-200/90 tracking-widest uppercase font-extrabold relative z-10 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
             Tap Card to Reveal
           </div>
         </div>
@@ -717,9 +699,12 @@
 
       const q = currentPool[currentIndex];
 
-      document.getElementById('frontCodeBadge').innerText = q.id || 'TRUTH';
-      document.getElementById('frontLevelBadge').innerText = (q.level || 'Level 1').toUpperCase();
-      document.getElementById('frontCatBadge').innerText = `#${q.category || 'General'}`;
+      const frontCode = document.getElementById('frontCodeBadge');
+      if (frontCode) frontCode.innerText = q.id || 'TRUTH';
+      const frontLvl = document.getElementById('frontLevelBadge');
+      if (frontLvl) frontLvl.innerText = (q.level || 'Level 1').toUpperCase();
+      const frontCat = document.getElementById('frontCatBadge');
+      if (frontCat) frontCat.innerText = `#${q.category || 'General'}`;
 
       document.getElementById('backCodeBadge').innerText = q.id || 'TRUTH';
       document.getElementById('backTagBadge').innerText = `#${q.category || 'General'} • ${q.level || 'Level 1'}`;
