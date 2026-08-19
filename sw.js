@@ -1,4 +1,4 @@
-const CACHE_NAME = 'deep-truths-v6';
+const CACHE_NAME = 'deep-truths-v7';
 const ASSETS = [
   './index.html',
   './manifest.json',
@@ -42,6 +42,7 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
 
 
 
