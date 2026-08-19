@@ -9,9 +9,14 @@ const SPREADSHEET_ID = "1OXwT69qI2cVRph0r3j0UjRrDAfAdBmjbQYBVtlgtjnQ";
 function doGet(e) {
   // Jika dipanggil via API eksternal (PWA Fetch) untuk mengambil data pertanyaan
   if (e && e.parameter && e.parameter.action === 'get') {
-    const questions = getQuestions();
-    return ContentService.createTextOutput(JSON.stringify({ success: true, data: questions }))
-      .setMimeType(ContentService.MimeType.JSON);
+    try {
+      const questions = getQuestions();
+      return ContentService.createTextOutput(JSON.stringify({ success: true, data: questions }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString(), data: [] }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
   }
   
   return HtmlService.createTemplateFromFile('index')
