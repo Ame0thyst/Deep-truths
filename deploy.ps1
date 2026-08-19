@@ -19,7 +19,7 @@ if (Test-Path $swFile) {
 
 # 2. Push & Deploy ke Google Apps Script
 Write-Host "Mengunggah backend ke Google Apps Script..." -ForegroundColor Cyan
-clasp push
+clasp push -f
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Melakukan deploy release baru di Google Apps Script..." -ForegroundColor Cyan
     clasp deploy -i AKfycbygidUWlQ1ihBlOzWo24AOHHy3MCZz82oQmzrXSCrDYNq9qoOb5x7f8wR9QcenCJ-LMzA
