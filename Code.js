@@ -4,7 +4,7 @@
 
 // Silakan masukkan ID Spreadsheet Anda di bawah ini jika sudah ada:
 // (Contoh: https://docs.google.com/spreadsheets/d/ID_SPREADSHEET_ANDA/edit)
-const SPREADSHEET_ID = ""; 
+const SPREADSHEET_ID = "1OXwT69qI2cVRph0r3j0UjRrDAfAdBmjbQYBVtlgtjnQ"; 
 
 function doGet(e) {
   // Jika dipanggil via API eksternal (PWA Fetch) untuk mengambil data pertanyaan
