@@ -364,7 +364,7 @@
       loadQuestionsData();
     };
 
-    // Dual Mode Data Fetcher (Apps Script iframe vs PWA fetch)
+    // Dual Mode Data Fetcher (Apps Script iframe vs PWA fetch with JSONP fallback)
     function loadQuestionsData() {
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
@@ -382,10 +382,30 @@
             }
           })
           .catch(err => {
-            console.error("PWA Fetch error:", err);
-            onQuestionsLoaded(getFallbackQuestions());
+            console.warn("Fetch diblokir CORS/Jaringan, mencoba metode JSONP fallback...", err);
+            loadQuestionsViaJSONP();
           });
       }
+    }
+
+    function loadQuestionsViaJSONP() {
+      const callbackName = 'cb_' + Date.now();
+      window[callbackName] = function(res) {
+        delete window[callbackName];
+        if (res && res.success && res.data && res.data.length > 0) {
+          onQuestionsLoaded(res.data);
+        } else {
+          onQuestionsLoaded(getFallbackQuestions());
+        }
+      };
+      const script = document.createElement('script');
+      script.src = API_URL + "?action=get&callback=" + callbackName;
+      script.onerror = function() {
+        delete window[callbackName];
+        console.error("JSONP juga gagal, menggunakan data lokal.");
+        onQuestionsLoaded(getFallbackQuestions());
+      };
+      document.head.appendChild(script);
     }
 
     function onQuestionsLoaded(data) {

@@ -7,14 +7,26 @@
 const SPREADSHEET_ID = "1OXwT69qI2cVRph0r3j0UjRrDAfAdBmjbQYBVtlgtjnQ"; 
 
 function doGet(e) {
-  // Jika dipanggil via API eksternal (PWA Fetch) untuk mengambil data pertanyaan
+  // Jika dipanggil via API eksternal (PWA Fetch / JSONP) untuk mengambil data pertanyaan
   if (e && e.parameter && e.parameter.action === 'get') {
     try {
       const questions = getQuestions();
-      return ContentService.createTextOutput(JSON.stringify({ success: true, data: questions }))
+      const payload = JSON.stringify({ success: true, data: questions });
+      
+      if (e.parameter.callback) {
+        return ContentService.createTextOutput(e.parameter.callback + '(' + payload + ')')
+          .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      }
+      
+      return ContentService.createTextOutput(payload)
         .setMimeType(ContentService.MimeType.JSON);
     } catch (err) {
-      return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString(), data: [] }))
+      const errPayload = JSON.stringify({ success: false, error: err.toString(), data: [] });
+      if (e.parameter.callback) {
+        return ContentService.createTextOutput(e.parameter.callback + '(' + errPayload + ')')
+          .setMimeType(ContentService.MimeType.JAVASCRIPT);
+      }
+      return ContentService.createTextOutput(errPayload)
         .setMimeType(ContentService.MimeType.JSON);
     }
   }
